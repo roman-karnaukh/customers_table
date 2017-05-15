@@ -26,39 +26,40 @@ var contacts = [
 ];
 
 var update_customer_id;
+var is_edit_mode = false;
+function isEditMode() { return is_edit_mode; }
+function setEditModeTrue() { is_edit_mode = true; }
+function setEditModeFalse() { is_edit_mode = true; }
 
 function loadContacts() {
-    localStorage.getItem("contacts") === null ? updateContacts() : contacts = JSON.parse(localStorage.getItem("contacts"));
+    localStorage.getItem("contacts") === null ? updateLocalContacts() : contacts = JSON.parse(localStorage.getItem("contacts"));
 }
 
-function updateContacts() {
-    alert("updateContacts");
+function updateLocalContacts() {
     localStorage.setItem("contacts", JSON.stringify(contacts));
 }
 
-function deleteContact(item_to_delete) {
-
+function deleteContact(id_to_delete) {
     for (var i in contacts) {
-        if(contacts[i].id.toString() === item_to_delete.toString()) {
-            // alert(contacts[i].id);
-            contacts.remove(i, i++);
+        if(contacts[i].id == id_to_delete) {
+            i == 0 ? contacts.shift() : contacts.splice(i, i++);
             break;
         }
-
     }
-    updateContacts();
+    updateLocalContacts();
 }
 
 function addCustomer(customer_name, customer_phone) {
-    contacts[contacts.length] = {
+    contacts.push({
         "id": contacts[contacts.length-1].id + 1,
         "name": customer_name,
         "phone": customer_phone
-    };
-    updateContacts();
+    });
+    updateLocalContacts();
 }
 
 function editCustomer(customer_id, customer_name, customer_phone) {
+    setEditModeFalse();
     for(var i in contacts){
         if(contacts[i].id.toString() === customer_id){
             contacts[i].name = customer_name;
@@ -66,19 +67,19 @@ function editCustomer(customer_id, customer_name, customer_phone) {
             break;
         }
     }
-    updateContacts();
+    updateLocalContacts();
 }
 
 function tableHtml(){
     var table = "";
-    table += "<table id='mytable' border='1'><tbody><tr><td>ID</td><td>Name</td><td>Phone</td><td>Action</td></tr>";
+    table += "<table id='mytable' class='table table-striped table-bordered'><tr><thead><td>ID</td><td>Name</td><td>Phone</td><td>Action</td></tr></thead><tbody>";
 
     for(var i = 0; contacts.length > i; i++){
         table += ("<tr id = " + contacts[i].id + "> " +
             "<td class='id'>" + contacts[i].id +"</td> " +
             "<td class='name'>" + contacts[i].name + "</td> " +
             "<td class='phone'>" + contacts[i].phone + "</td>" +
-            "<td><a class = 'edit'>Edit </a><a class = 'delete' style=' '>Remove</a></td>" +
+            "<td><button style='margin-right: 10px' class='button_edit btn btn-info btn-sm'>Edit </button><button class = 'delete btn btn-danger btn-sm' >Remove</button></td>" +
             "</tr>");
     }
 
@@ -86,57 +87,26 @@ function tableHtml(){
     return table;
 }
 
-function createFragment(htmlStr) {
-    var frag = document.createDocumentFragment(),
-        temp = document.createElement('div');
-    temp.innerHTML = htmlStr;
-    while (temp.firstChild) {
-        frag.appendChild(temp.firstChild);
-    }
-    return frag;
-}
-
-function appendTo(elementId, htmlStr){
-    document.getElementById(elementId).appendChild(createFragment(htmlStr));
-}
-
-function replaceElementByID(elementId, htmlStr){
-    document.getElementById(elementId).innerHTML = htmlStr;
-}
-
-function addTable() {
-    appendTo("table_place", tableHtml())
-}
-
-function reloadTable() {
-    replaceElementByID("table_place", tableHtml())
-}
-
 function removeAncestor(item) {
     var tr = $(item).parent().parent();
-    var item_to_delete = $(tr).attr('id');
+    var id_to_delete = $(tr).attr('id');
     tr.remove();
-    deleteContact(item_to_delete);
+    deleteContact(id_to_delete);
 }
 
 function formSubmit() {
     var customer_name = $('#customer_name').val().toString();
-    var customer_phone =  document.getElementById('customer_phone').value;
-    $("#submit").attr("value").toString() === "Update" ?
+    var customer_phone =  $('#customer_phone').val().toString();
+    isEditMode() ?
         editCustomer(update_customer_id, customer_name, customer_phone)
         : addCustomer(customer_name,customer_phone);
 }
 
 function activateUpdating(item) {
     update_customer_id = $(item).parent().parent().attr('id');
-    $('tr#'+update_customer_id).find('a.delete').attr('style', "pointer-events: none; display: inline-block; color: #ffffff;"); // disable removing
+    $('tr#'+update_customer_id).find('button.delete').attr('disabled', 'disabled'); // disable removing
     $("#submit").attr("value", "Update");
     $("#customer_name").val($('tr#'+update_customer_id).find('td.name').html());
     $("#customer_phone").val($('tr#'+update_customer_id).find('td.phone').html());
+    setEditModeTrue();
 }
-
-Array.prototype.remove = function(from, to) {
-    var rest = this.slice((to || from) + 1 || this.length);
-    this.length = from < 0 ? this.length + from : from;
-    return this.push.apply(this, rest);
-};
